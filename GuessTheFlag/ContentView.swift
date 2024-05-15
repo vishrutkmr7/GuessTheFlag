@@ -43,6 +43,10 @@ struct ContentView: View {
     @State private var score = 0
     @State private var turns = 8
     
+    @State private var animationAmount = 0.0
+    @State private var selectedFlag = -1
+    @State private var isTapped = false
+    
     var body: some View {
         ZStack {
             RadialGradient(stops: [
@@ -53,7 +57,7 @@ struct ContentView: View {
             
             VStack{
                 Spacer()
-                Text("Fun with Flags! :)")
+                Text("Fun with Flags! 💁🏻‍♂️")
 //                    .foregroundStyle(.white)
 //                    .font(.largeTitle.weight(.bold))
                     .largeBlueTitle()
@@ -72,9 +76,15 @@ struct ContentView: View {
                     
                     ForEach(0..<3) { number in
                         Button {
-                            flagTapped(number)
+                            withAnimation {
+                                flagTapped(number)
+                            }
                         } label: {
                             FlagImage(country: countries[number])
+                                .rotation3DEffect(.degrees(number == selectedFlag && isTapped ? animationAmount : 0), axis: (x: 0, y: 1, z: 0))
+                                .opacity(number != selectedFlag && isTapped ? 0.25 : 1)
+                                .scaleEffect(number != selectedFlag && isTapped ? 0.75 : 1)
+                                .animation(.easeIn(duration: 1), value: animationAmount)
                         }
                     }
                 }
@@ -95,7 +105,9 @@ struct ContentView: View {
             .padding()
         }
         .alert(scoreTitle, isPresented: $showingScore) {
-            Button("Continue", action: askQuestion)
+            if turns > 0 {
+                Button("Continue", action: askQuestion)
+            }
             Button("Reset Game", role: .destructive, action: resetGame)
         } message: {
             if turns > 0 {
@@ -107,6 +119,9 @@ struct ContentView: View {
     }
     
     func flagTapped(_ number: Int) {
+        isTapped = true
+        selectedFlag = number
+        
         if turns > 0 {
             if number == correctAnswer {
                 scoreTitle = "Correct! That's the flag of \(countries[number])"
@@ -121,7 +136,13 @@ struct ContentView: View {
                 scoreTitle += "\nGame Over. Your final score is \(score)."
             }
             
-            showingScore = true
+            withAnimation {
+                animationAmount += 360
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                showingScore = true
+            }
         }
     }
     
@@ -129,6 +150,9 @@ struct ContentView: View {
         if turns > 0 {
             countries.shuffle()
             correctAnswer = Int.random(in: 0...2)
+            selectedFlag = -1
+            animationAmount = 0
+            isTapped = false
         } else {
             resetGame()
         }
@@ -141,6 +165,9 @@ struct ContentView: View {
         countries.shuffle()
         correctAnswer = Int.random(in: 0...2)
         showingScore = false
+        selectedFlag = -1
+        animationAmount = 0
+        isTapped = false
     }
 
        
